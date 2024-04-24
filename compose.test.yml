@@ -1,0 +1,94 @@
+version: "2.23.0"
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    hostname: mongodb
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    volumes:
+      - data_mg:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh | grep 1
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 15s
+
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root123
+      - MYSQL_DATABASE=flights
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=user123
+    ports:
+      - 33060:3306
+    expose:
+      - 3306
+    volumes:
+      - data_sql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 50s
+      retries: 5
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: heidiks/rabbitmq-delayed-message-exchange:latest
+    environment:
+      RABBITMQ_DEFAULT_USER: my_rabbitmq_user
+      RABBITMQ_DEFAULT_PASS: my_rabbitmq_password
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "node_health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - data_rabbitmq:/var/lib/rabbitmq
+
+  payment-microservice:
+    build: ./payment-microservice/api
+    container_name: payment
+    image: maven:3-openjdk-17
+    volumes:
+      - ./payment-microservice:/payment-microservice
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_JSON: '{"spring.data.mongodb.uri" : "mongodb://mongodb:27017/my_mongodb_database"}'
+      RABBITMQ_USER: my_rabbitmq_user
+      RABBITMQ_PASSWORS: my_rabbitmq_password
+    working_dir: /payment-microservice/api
+    command: sh -c "./mvnw spring-boot:run"
+
+volumes:
+  data_mg:
+    driver: local
+  data_sql:
+    driver: local
+  data_rabbitmq:
+    driver: local
