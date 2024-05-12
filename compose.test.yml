@@ -1,21 +1,5 @@
 version: "2.23.0"
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
-    hostname: mongodb
-    restart: unless-stopped
-    ports:
-      - 27017:27017
-    volumes:
-      - data_mg:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh | grep 1
-      interval: 30s
-      timeout: 30s
-      retries: 5
-      start_period: 15s
-
   mysql:
     container_name: mysql
     image: mysql:latest
@@ -40,6 +24,8 @@ services:
   redis:
     container_name: redis
     image: redis:latest
+    volumes:
+      - data_redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -86,7 +72,7 @@ services:
     command: sh -c "./mvnw spring-boot:run"
 
 volumes:
-  data_mg:
+  data_redis:
     driver: local
   data_sql:
     driver: local
