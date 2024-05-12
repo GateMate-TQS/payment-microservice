@@ -58,16 +58,14 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      mongodb:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mysql:
+        condition: service_healthy
     environment:
-      SPRING_APPLICATION_JSON: '{"spring.data.mongodb.uri" : "mongodb://mongodb:27017/my_mongodb_database"}'
-      RABBITMQ_USER: my_rabbitmq_user
-      RABBITMQ_PASSWORS: my_rabbitmq_password
+      SPRING_APPLICATION_JSON: '{"spring.datasource.url":"jdbc:mysql://mysql:3306/flights","spring.datasource.username":"user","spring.datasource.password":"user123","spring.redis.host":"redis","spring.redis.port":"6379","spring.rabbitmq.host":"rabbitmq","spring.rabbitmq.port":"5672","spring.rabbitmq.username":"my_rabbitmq_user","spring.rabbitmq.password":"my_rabbitmq_password"}'
     working_dir: /payment-microservice/api
     command: sh -c "./mvnw spring-boot:run"
 
