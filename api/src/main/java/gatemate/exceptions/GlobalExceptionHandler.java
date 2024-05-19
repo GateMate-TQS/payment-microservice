@@ -11,7 +11,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<String> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        if (ex.getRequiredType().isEnum()) {
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
             return new ResponseEntity<>("Invalid transaction status value", HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>("Bad request", HttpStatus.BAD_REQUEST);
