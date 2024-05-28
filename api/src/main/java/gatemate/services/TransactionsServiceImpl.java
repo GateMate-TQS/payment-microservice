@@ -5,22 +5,23 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import gatemate.entities.Transactions;
+import gatemate.entities.TransactionStatus;
 import gatemate.repositories.TransactionsRepository;
 
 @Service
-public class TransactionsServiceImpl implements TransactionsService{
+public class TransactionsServiceImpl implements TransactionsService {
 
     private final TransactionsRepository transactionsRepository;
 
     public TransactionsServiceImpl(TransactionsRepository transactionsRepository) {
-      this.transactionsRepository = transactionsRepository;
+        this.transactionsRepository = transactionsRepository;
     }
 
     @Override
     public void createTransaction(Transactions transaction) {
 
         transactionsRepository.save(transaction);
-        
+
     }
 
     @Override
@@ -32,5 +33,19 @@ public class TransactionsServiceImpl implements TransactionsService{
     public List<Transactions> getTransactionsByFlight(String iataFlight) {
         return transactionsRepository.findByIataFlight(iataFlight);
     }
-    
+
+    @Override
+    public void updateTransaction(Long id) {
+        Transactions transaction = transactionsRepository.findById(id).get();
+
+        transaction.setStatus(TransactionStatus.CHECKEDIN);
+
+        transactionsRepository.save(transaction);
+    }
+
+    @Override
+    public Transactions getTransaction(Long id) {
+        return transactionsRepository.findById(id).get();
+    }
+
 }
