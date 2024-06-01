@@ -1,6 +1,7 @@
 package gatemate.services;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -19,9 +20,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     public void createTransaction(Transactions transaction) {
-
         transactionsRepository.save(transaction);
-
     }
 
     @Override
@@ -30,22 +29,19 @@ public class TransactionsServiceImpl implements TransactionsService {
     }
 
     @Override
-    public List<Transactions> getTransactionsByFlight(String iataFlight) {
-        return transactionsRepository.findByIataFlight(iataFlight);
-    }
-
-    @Override
     public void updateTransaction(Long id) {
-        Transactions transaction = transactionsRepository.findById(id).get();
-
-        transaction.setStatus(TransactionStatus.CHECKEDIN);
-
-        transactionsRepository.save(transaction);
+        Optional<Transactions> transactionOpt = transactionsRepository.findById(id);
+        if (transactionOpt.isPresent()) {
+            Transactions transaction = transactionOpt.get();
+            transaction.setStatus(TransactionStatus.CHECKEDIN);
+            transactionsRepository.save(transaction);
+        } else {
+            throw new TransactionNotFoundException("Transaction not found for id: " + id);
+        }
     }
 
     @Override
     public Transactions getTransaction(Long id) {
         return transactionsRepository.findById(id).orElse(null);
     }
-
 }

@@ -20,7 +20,7 @@ class TransactionsRepositoryTest {
     private TransactionsRepository transactionsRepository;
 
     @Test
-    @DisplayName("Test to find transaction by id")
+    @DisplayName("Find transaction by id")
     void whenFindTransactionByExistingId_thenReturnTransaction() {
         Transactions transaction = new Transactions();
         entityManager.persistAndFlush(transaction);
@@ -31,14 +31,14 @@ class TransactionsRepositoryTest {
     }
 
     @Test
-    @DisplayName("Test to find transaction by invalid id")
+    @DisplayName("Find transaction by invalid id")
     void whenInvalidId_thenReturnNull() {
         Transactions transactiondb = transactionsRepository.findById(-1L).orElse(null);
         assertThat(transactiondb).isNull();
     }
 
     @Test
-    @DisplayName("Test to find all transactions")
+    @DisplayName("Find all transactions")
     void givenSetOfTransactions_whenFindAll_thenReturnSet() {
         Transactions transaction1 = new Transactions();
         transaction1.setUserEmail("FirstUser");
@@ -49,13 +49,13 @@ class TransactionsRepositoryTest {
         entityManager.persistAndFlush(transaction2);
 
         assertThat(transactionsRepository.findAll())
-            .hasSize(2)
-            .extracting(Transactions::getUserEmail)
-            .contains(transaction1.getUserEmail(), transaction2.getUserEmail());
+                .hasSize(2)
+                .extracting(Transactions::getUserEmail)
+                .contains(transaction1.getUserEmail(), transaction2.getUserEmail());
     }
 
     @Test
-    @DisplayName("Test to find transactions by user")
+    @DisplayName("Find transactions by user")
     void givenSetOfTransactions_whenFindByUser_thenReturnSet() {
         Transactions transaction1 = new Transactions();
         transaction1.setUserEmail("FirstUser");
@@ -66,13 +66,13 @@ class TransactionsRepositoryTest {
         entityManager.persistAndFlush(transaction2);
 
         assertThat(transactionsRepository.findByUserEmail("FirstUser"))
-            .hasSize(1)
-            .extracting(Transactions::getUserEmail)
-            .contains(transaction1.getUserEmail());
+                .hasSize(1)
+                .extracting(Transactions::getUserEmail)
+                .contains(transaction1.getUserEmail());
     }
 
     @Test
-    @DisplayName("Test to find transactions by invalid user")
+    @DisplayName("Find transactions by invalid user")
     void whenFindByInvalidUser_thenReturnEmptySet() {
         Transactions transaction1 = new Transactions();
         transaction1.setUserEmail("FirstUser");
@@ -86,7 +86,7 @@ class TransactionsRepositoryTest {
     }
 
     @Test
-    @DisplayName("Test to find transactions by flight")
+    @DisplayName("Find transactions by flight")
     void givenSetOfTransactions_whenFindByFlight_thenReturnSet() {
         Transactions transaction1 = new Transactions();
         transaction1.setIataFlight("AA123");
@@ -97,13 +97,13 @@ class TransactionsRepositoryTest {
         entityManager.persistAndFlush(transaction2);
 
         assertThat(transactionsRepository.findByIataFlight("AA123"))
-            .hasSize(1)
-            .extracting(Transactions::getIataFlight)
-            .contains(transaction1.getIataFlight());
+                .hasSize(1)
+                .extracting(Transactions::getIataFlight)
+                .contains(transaction1.getIataFlight());
     }
 
     @Test
-    @DisplayName("Test to find transactions by invalid flight")
+    @DisplayName("Find transactions by invalid flight")
     void whenFindByInvalidFlight_thenReturnEmptySet() {
         Transactions transaction1 = new Transactions();
         transaction1.setIataFlight("AA123");
@@ -117,7 +117,7 @@ class TransactionsRepositoryTest {
     }
 
     @Test
-    @DisplayName("Test to save transaction")
+    @DisplayName("Save transaction")
     void whenSaveTransaction_thenTransactionIsSaved() {
         Transactions transaction = new Transactions();
         transaction.setUserEmail("FirstUser");
@@ -125,10 +125,34 @@ class TransactionsRepositoryTest {
         transactionsRepository.save(transaction);
 
         assertThat(transactionsRepository.findAll())
-            .hasSize(1)
-            .extracting(Transactions::getUserEmail)
-            .contains(transaction.getUserEmail());
+                .hasSize(1)
+                .extracting(Transactions::getUserEmail)
+                .contains(transaction.getUserEmail());
     }
 
-    
+    @Test
+    @DisplayName("Update transaction")
+    void whenUpdateTransaction_thenTransactionIsUpdated() {
+        Transactions transaction = new Transactions();
+        transaction.setUserEmail("FirstUser");
+        entityManager.persistAndFlush(transaction);
+
+        transaction.setUserEmail("UpdatedUser");
+        transactionsRepository.save(transaction);
+
+        Transactions updatedTransaction = transactionsRepository.findById(transaction.getId()).orElse(null);
+        assertThat(updatedTransaction).isNotNull();
+        assertThat(updatedTransaction.getUserEmail()).isEqualTo("UpdatedUser");
+    }
+
+    @Test
+    @DisplayName("Delete transaction")
+    void whenDeleteTransaction_thenTransactionIsDeleted() {
+        Transactions transaction = new Transactions();
+        entityManager.persistAndFlush(transaction);
+
+        transactionsRepository.delete(transaction);
+        Transactions deletedTransaction = transactionsRepository.findById(transaction.getId()).orElse(null);
+        assertThat(deletedTransaction).isNull();
+    }
 }
