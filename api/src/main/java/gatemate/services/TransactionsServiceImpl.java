@@ -45,7 +45,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     public Transactions getTransaction(Long id) {
-        return transactionsRepository.findById(id).get();
+        return transactionsRepository.findById(id).orElse(null);
     }
 
 }
