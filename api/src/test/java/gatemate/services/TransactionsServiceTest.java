@@ -93,13 +93,29 @@ class TransactionsServiceTest {
     void whenUpdateTransaction_thenStatusShouldBeCheckedIn() {
         transactionsServiceImpl.updateTransaction(1L);
 
+        verify(transactionsRepository, times(1)).findById(1L); // Added verification for findById
         verify(transactionsRepository, times(1)).save(transaction1);
         assertThat(transaction1.getStatus()).isEqualTo(TransactionStatus.CHECKEDIN);
     }
 
     @Test
+    @DisplayName("Update a transaction with invalid ID")
+    void whenUpdateTransactionWithInvalidId_thenThrowException() {
+        when(transactionsRepository.findById(-1L)).thenReturn(Optional.empty()); // Mocking findById
+
+        Throwable thrown = catchThrowable(() -> {
+            transactionsServiceImpl.updateTransaction(-1L);
+        });
+
+        assertThat(thrown).isInstanceOf(TransactionNotFoundException.class)
+                .hasMessage("Transaction not found for id: -1");
+    }
+
+    @Test
     @DisplayName("Get a transaction by ID")
     void whenGetTransactionById_thenReturnTransaction() {
+        when(transactionsRepository.findById(1L)).thenReturn(Optional.of(transaction1)); // Mocking findById
+
         Transactions foundTransaction = transactionsServiceImpl.getTransaction(1L);
 
         assertThat(foundTransaction).isEqualTo(transaction1);
@@ -108,22 +124,10 @@ class TransactionsServiceTest {
     @Test
     @DisplayName("Get a transaction by invalid ID")
     void whenGetTransactionByInvalidId_thenReturnNull() {
+        when(transactionsRepository.findById(-1L)).thenReturn(Optional.empty()); // Mocking findById
+
         Transactions foundTransaction = transactionsServiceImpl.getTransaction(-1L);
 
         assertThat(foundTransaction).isNull();
-    }
-
-    @Test
-    @DisplayName("Update a transaction with invalid ID")
-    void whenUpdateTransactionWithInvalidId_thenThrowException() {
-        doThrow(new TransactionNotFoundException("Transaction not found for id: -1")).when(transactionsRepository)
-                .findById(-1L);
-
-        Throwable thrown = catchThrowable(() -> {
-            transactionsServiceImpl.updateTransaction(-1L);
-        });
-
-        assertThat(thrown).isInstanceOf(TransactionNotFoundException.class)
-                .hasMessage("Transaction not found for id: -1");
     }
 }

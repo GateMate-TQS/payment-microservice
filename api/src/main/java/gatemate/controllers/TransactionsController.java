@@ -18,7 +18,7 @@ public class TransactionsController {
     private final TransactionsService transactionsService;
 
     @GetMapping("/transactions_by_user/{userEmail}")
-    public ResponseEntity<?> getTransactionsByUser(@PathVariable String userEmail) {
+    public ResponseEntity<Object> getTransactionsByUser(@PathVariable String userEmail) {
         List<Transactions> transactions = transactionsService.getTransactionsByUser(userEmail);
 
         if (transactions.isEmpty()) {
@@ -53,7 +53,7 @@ public class TransactionsController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTransaction(@PathVariable String id) {
+    public ResponseEntity<Object> getTransaction(@PathVariable String id) {
         Long longId;
         try {
             longId = Long.parseLong(id);
