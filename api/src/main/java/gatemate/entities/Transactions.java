@@ -19,6 +19,6 @@ public class Transactions {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String userEmail;
-  private String iataFlight; 
+  private String iataFlight;
   private TransactionStatus status;
 }
