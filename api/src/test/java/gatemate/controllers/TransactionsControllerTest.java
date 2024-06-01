@@ -123,6 +123,22 @@ class TransactionsControllerTest {
     }
 
     @Test
+    @DisplayName("Test to create a transaction with missing data")
+    void whenCreateTransactionWithMissingData_thenReturnBadRequest() {
+        // Create a dictionary representing the transaction with missing data
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "FirstUser");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
+                .when()
+                .post("/create_transaction")
+                .then()
+                .statusCode(400); // Expecting 400 Bad Request due to missing data
+    }
+
+    @Test
     @DisplayName("Test to update a transaction")
     void whenUpdateTransaction_thenReturnTransactionUpdated() {
         Transactions transaction = new Transactions();
@@ -171,6 +187,22 @@ class TransactionsControllerTest {
                 .body(is("Transaction not found"));
 
         verify(transactionsService, times(1)).updateTransaction(999L);
+    }
+
+    @Test
+    @DisplayName("Test to update a transaction with missing data")
+    void whenUpdateTransactionWithMissingData_thenReturnBadRequest() {
+        // Create a dictionary representing the transaction with missing data
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "FirstUser");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
+                .when()
+                .put("/update_transaction/1")
+                .then()
+                .statusCode(400); // Expecting 400 Bad Request due to missing data
     }
 
     @Test
