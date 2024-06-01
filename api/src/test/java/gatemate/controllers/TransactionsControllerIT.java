@@ -53,7 +53,6 @@ class TransactionsControllerIT {
         transactionsRepository.save(transaction2);
         transactionsRepository.save(transaction3);
         RestAssuredMockMvc.mockMvc(mockMvc);
-
     }
 
     @AfterEach
@@ -71,6 +70,7 @@ class TransactionsControllerIT {
                 .statusCode(200)
                 .contentType(ContentType.JSON)
                 .and()
+                .body("$.size()", is(2))
                 .body("[0].userEmail", is("FirstUser"))
                 .body("[1].userEmail", is("FirstUser"));
     }
@@ -82,31 +82,8 @@ class TransactionsControllerIT {
                 .when()
                 .get("/transactions_by_user/ThirdUser")
                 .then()
-                .statusCode(404);
-    }
-
-    @Test
-    @DisplayName("Test to find all transactions by flight")
-    void whenFindByFlight_thenReturnTransactionList() {
-        RestAssuredMockMvc.given()
-                .when()
-                .get("/transactions_by_flight/FirstFlight")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .and()
-                .body("[0].iataFlight", is("FirstFlight"))
-                .body("[1].iataFlight", is("FirstFlight"));
-    }
-
-    @Test
-    @DisplayName("Test to find all transactions by flight with no transactions")
-    void whenFindByFlightWithNoTransactions_thenReturnNotFound() {
-        RestAssuredMockMvc.given()
-                .when()
-                .get("/transactions_by_flight/ThirdFlight")
-                .then()
-                .statusCode(404);
+                .statusCode(404)
+                .body(is("No transactions found for user: ThirdUser"));
     }
 
     @Test
@@ -123,8 +100,24 @@ class TransactionsControllerIT {
                 .when()
                 .post("/create_transaction")
                 .then()
-                .statusCode(200)
+                .statusCode(201)
                 .body(is("Transaction created"));
+    }
+
+    @Test
+    @DisplayName("Test to create transaction with invalid data")
+    void whenCreateTransactionWithInvalidData_thenReturnBadRequest() {
+        Transactions transaction = new Transactions();
+        transaction.setUserEmail("ThirdUser");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transaction)
+                .when()
+                .post("/create_transaction")
+                .then()
+                .statusCode(400)
+                .body(is("Invalid transaction data"));
     }
 
     @Test
@@ -135,14 +128,53 @@ class TransactionsControllerIT {
         transaction.setIataFlight("FirstFlight");
         transaction.setStatus(TransactionStatus.CANCELED);
 
-        transactionsRepository.save(transaction);
+        Transactions savedTransaction = transactionsRepository.save(transaction);
+
+        transaction.setStatus(TransactionStatus.CHECKEDIN);
 
         RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transaction)
                 .when()
-                .put("/update_transaction/{id}", Long.toString(transaction.getId())) // Convert ID to string
+                .put("/update_transaction/" + savedTransaction.getId())
                 .then()
                 .statusCode(200)
                 .body(is("Transaction updated"));
+    }
+
+    @Test
+    @DisplayName("Test to update transaction with non-existent ID")
+    void whenUpdateTransactionWithNonExistentId_thenReturnNotFound() {
+        Transactions transaction = new Transactions();
+        transaction.setUserEmail("NonExistentUser");
+        transaction.setIataFlight("NonExistentFlight");
+        transaction.setStatus(TransactionStatus.CANCELED);
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transaction)
+                .when()
+                .put("/update_transaction/999")
+                .then()
+                .statusCode(404)
+                .body(is("Transaction not found"));
+    }
+
+    @Test
+    @DisplayName("Test to update transaction with invalid data")
+    void whenUpdateTransactionWithInvalidData_thenReturnBadRequest() {
+        Transactions transaction = new Transactions();
+        transaction.setUserEmail("FirstUser");
+        // Missing required fields
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transaction)
+                .when()
+                .put("/update_transaction/1")
+                .then()
+                .statusCode(400)
+                .body(is("Invalid transaction data"));
     }
 
     @Test
@@ -153,16 +185,16 @@ class TransactionsControllerIT {
         transaction.setIataFlight("AA123");
         transaction.setStatus(TransactionStatus.PAYED);
 
-        transactionsRepository.save(transaction);
+        Transactions savedTransaction = transactionsRepository.save(transaction);
 
         RestAssuredMockMvc.given()
                 .when()
-                .get("/" + Long.toString(transaction.getId())) // Convert ID to string
+                .get("/" + savedTransaction.getId())
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
                 .and()
-                .body("id", is(transaction.getId().intValue()))
+                .body("id", is(savedTransaction.getId().intValue()))
                 .body("userEmail", is("FirstUser"))
                 .body("iataFlight", is("AA123"))
                 .body("status", is("PAYED"));
@@ -175,7 +207,8 @@ class TransactionsControllerIT {
                 .when()
                 .get("/999")
                 .then()
-                .statusCode(404);
+                .statusCode(404)
+                .body(is("Transaction not found"));
     }
 
     @Test
@@ -185,6 +218,7 @@ class TransactionsControllerIT {
                 .when()
                 .get("/invalid-id")
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .body(is("Invalid transaction ID"));
     }
 }

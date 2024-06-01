@@ -9,8 +9,6 @@ public interface TransactionsService {
 
     public List<Transactions> getTransactionsByUser(String userEmail);
 
-    public List<Transactions> getTransactionsByFlight(String iataFlight);
-
     public void updateTransaction(Long id);
 
     public Transactions getTransaction(Long id);

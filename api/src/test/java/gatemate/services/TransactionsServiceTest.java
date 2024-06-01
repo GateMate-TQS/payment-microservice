@@ -61,7 +61,7 @@ class TransactionsServiceTest {
     }
 
     @Test
-    @DisplayName("Test to find all transactions by user")
+    @DisplayName("Find all transactions by user")
     void whenFindByUser_thenReturnTransactionList() {
         assertThat(transactionsServiceImpl.getTransactionsByUser("FirstUser"))
                 .hasSize(2)
@@ -70,28 +70,13 @@ class TransactionsServiceTest {
     }
 
     @Test
-    @DisplayName("Test to find all transactions by user with invalid user")
+    @DisplayName("Find all transactions by user with invalid user")
     void whenFindByInvalidUser_thenReturnEmptyList() {
         assertThat(transactionsServiceImpl.getTransactionsByUser("InvalidUser")).isEmpty();
     }
 
     @Test
-    @DisplayName("Test to find all transactions by flight")
-    void whenFindByFlight_thenReturnTransactionList() {
-        assertThat(transactionsServiceImpl.getTransactionsByFlight("AA456"))
-                .hasSize(2)
-                .extracting(Transactions::getIataFlight)
-                .contains(transaction2.getIataFlight(), transaction3.getIataFlight());
-    }
-
-    @Test
-    @DisplayName("Test to find all transactions by flight with invalid flight")
-    void whenFindByInvalidFlight_thenReturnEmptyList() {
-        assertThat(transactionsServiceImpl.getTransactionsByFlight("InvalidFlight")).isEmpty();
-    }
-
-    @Test
-    @DisplayName("Test to create a transaction")
+    @DisplayName("Create a transaction")
     void whenCreateTransaction_thenReturnTransaction() {
         Transactions transaction = new Transactions();
         transaction.setUserEmail("FirstUser");
@@ -104,19 +89,45 @@ class TransactionsServiceTest {
     }
 
     @Test
-    @DisplayName("Test to update a transaction")
+    @DisplayName("Update a transaction")
     void whenUpdateTransaction_thenStatusShouldBeCheckedIn() {
         transactionsServiceImpl.updateTransaction(1L);
 
+        verify(transactionsRepository, times(1)).findById(1L); // Added verification for findById
         verify(transactionsRepository, times(1)).save(transaction1);
         assertThat(transaction1.getStatus()).isEqualTo(TransactionStatus.CHECKEDIN);
     }
 
     @Test
-    @DisplayName("Test to get a transaction by ID")
+    @DisplayName("Update a transaction with invalid ID")
+    void whenUpdateTransactionWithInvalidId_thenThrowException() {
+        when(transactionsRepository.findById(-1L)).thenReturn(Optional.empty()); // Mocking findById
+
+        Throwable thrown = catchThrowable(() -> {
+            transactionsServiceImpl.updateTransaction(-1L);
+        });
+
+        assertThat(thrown).isInstanceOf(TransactionNotFoundException.class)
+                .hasMessage("Transaction not found for id: -1");
+    }
+
+    @Test
+    @DisplayName("Get a transaction by ID")
     void whenGetTransactionById_thenReturnTransaction() {
+        when(transactionsRepository.findById(1L)).thenReturn(Optional.of(transaction1)); // Mocking findById
+
         Transactions foundTransaction = transactionsServiceImpl.getTransaction(1L);
 
         assertThat(foundTransaction).isEqualTo(transaction1);
+    }
+
+    @Test
+    @DisplayName("Get a transaction by invalid ID")
+    void whenGetTransactionByInvalidId_thenReturnNull() {
+        when(transactionsRepository.findById(-1L)).thenReturn(Optional.empty()); // Mocking findById
+
+        Transactions foundTransaction = transactionsServiceImpl.getTransaction(-1L);
+
+        assertThat(foundTransaction).isNull();
     }
 }

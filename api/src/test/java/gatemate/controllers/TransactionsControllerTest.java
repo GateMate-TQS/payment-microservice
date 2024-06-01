@@ -1,10 +1,8 @@
 package gatemate.controllers;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import gatemate.entities.TransactionStatus;
 import gatemate.entities.Transactions;
+import gatemate.services.TransactionNotFoundException;
 import gatemate.services.TransactionsService;
 import io.restassured.http.ContentType;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
@@ -60,7 +59,6 @@ class TransactionsControllerTest {
                 .body("[1].userEmail", is("FirstUser"));
 
         verify(transactionsService, times(1)).getTransactionsByUser("FirstUser");
-
     }
 
     @Test
@@ -75,44 +73,6 @@ class TransactionsControllerTest {
                 .statusCode(404);
 
         verify(transactionsService, times(1)).getTransactionsByUser("FirstUser");
-    }
-
-    @Test
-    @DisplayName("Test to find all transactions by flight")
-    void whenFindByFlight_thenReturnTransactionList() {
-        Transactions transaction1 = new Transactions();
-        transaction1.setIataFlight("AA123");
-        Transactions transaction2 = new Transactions();
-        transaction2.setIataFlight("AA123");
-
-        when(transactionsService.getTransactionsByFlight("AA123"))
-                .thenReturn(Arrays.asList(transaction1, transaction2));
-
-        RestAssuredMockMvc.given()
-                .when()
-                .get("/transactions_by_flight/AA123")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .and()
-                .body("[0].iataFlight", is("AA123"))
-                .body("[1].iataFlight", is("AA123"));
-
-        verify(transactionsService, times(1)).getTransactionsByFlight("AA123");
-    }
-
-    @Test
-    @DisplayName("Test to find all transactions by flight with no transactions")
-    void whenFindByFlightWithNoTransactions_thenReturnNotFound() {
-        when(transactionsService.getTransactionsByFlight("AA123")).thenReturn(Arrays.asList());
-
-        RestAssuredMockMvc.given()
-                .when()
-                .get("/transactions_by_flight/AA123")
-                .then()
-                .statusCode(404);
-
-        verify(transactionsService, times(1)).getTransactionsByFlight("AA123");
     }
 
     @Test
@@ -133,7 +93,7 @@ class TransactionsControllerTest {
                 .when()
                 .post("/create_transaction")
                 .then()
-                .statusCode(200);
+                .statusCode(201); // Changed to 201 Created for REST best practices
 
         // Verify that createTransaction method is called with the captured argument
         verify(transactionsService, times(1)).createTransaction(argumentCaptor.capture());
@@ -143,6 +103,39 @@ class TransactionsControllerTest {
         assertEquals("FirstUser", capturedTransaction.getUserEmail());
         assertEquals("AA123", capturedTransaction.getIataFlight());
         assertEquals(TransactionStatus.CANCELED, capturedTransaction.getStatus());
+    }
+
+    @Test
+    @DisplayName("Test to create a transaction with invalid data")
+    void whenCreateTransactionWithInvalidData_thenReturnBadRequest() {
+        // Create an incomplete dictionary representing the transaction
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "FirstUser");
+        transactionBody.put("status", "invalid_status");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
+                .when()
+                .post("/create_transaction")
+                .then()
+                .statusCode(400); // Expecting 400 Bad Request due to invalid input
+    }
+
+    @Test
+    @DisplayName("Test to create a transaction with missing data")
+    void whenCreateTransactionWithMissingData_thenReturnBadRequest() {
+        // Create a dictionary representing the transaction with missing data
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "FirstUser");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
+                .when()
+                .post("/create_transaction")
+                .then()
+                .statusCode(400); // Expecting 400 Bad Request due to missing data
     }
 
     @Test
@@ -156,7 +149,14 @@ class TransactionsControllerTest {
 
         when(transactionsService.getTransaction(1L)).thenReturn(transaction);
 
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "FirstUser");
+        transactionBody.put("iataFlight", "AA123");
+        transactionBody.put("status", "CHECKEDIN");
+
         RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
                 .when()
                 .put("/update_transaction/1")
                 .then()
@@ -164,6 +164,45 @@ class TransactionsControllerTest {
                 .body(is("Transaction updated"));
 
         verify(transactionsService, times(1)).updateTransaction(1L);
+    }
+
+    @Test
+    @DisplayName("Test to update a transaction with invalid ID")
+    void whenUpdateTransactionWithInvalidId_thenReturnNotFound() {
+        doThrow(new TransactionNotFoundException("Transaction not found")).when(transactionsService)
+                .updateTransaction(999L);
+
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "NonExistentUser");
+        transactionBody.put("iataFlight", "NonExistentFlight");
+        transactionBody.put("status", "CANCELED");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
+                .when()
+                .put("/update_transaction/999")
+                .then()
+                .statusCode(404)
+                .body(is("Transaction not found"));
+
+        verify(transactionsService, times(1)).updateTransaction(999L);
+    }
+
+    @Test
+    @DisplayName("Test to update a transaction with missing data")
+    void whenUpdateTransactionWithMissingData_thenReturnBadRequest() {
+        // Create a dictionary representing the transaction with missing data
+        Map<String, Object> transactionBody = new HashMap<>();
+        transactionBody.put("userEmail", "FirstUser");
+
+        RestAssuredMockMvc.given()
+                .contentType(ContentType.JSON)
+                .body(transactionBody)
+                .when()
+                .put("/update_transaction/1")
+                .then()
+                .statusCode(400); // Expecting 400 Bad Request due to missing data
     }
 
     @Test
