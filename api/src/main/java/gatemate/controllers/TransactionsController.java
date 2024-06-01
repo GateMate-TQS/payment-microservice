@@ -10,6 +10,11 @@ import gatemate.entities.Transactions;
 import gatemate.services.TransactionNotFoundException;
 import gatemate.services.TransactionsService;
 import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @RestController
 @AllArgsConstructor
@@ -17,6 +22,11 @@ import lombok.AllArgsConstructor;
 public class TransactionsController {
     private final TransactionsService transactionsService;
 
+    @Operation(summary = "Obter transações por e-mail do usuário")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transações encontradas", content = @Content(schema = @Schema(implementation = Transactions.class))),
+            @ApiResponse(responseCode = "404", description = "Nenhuma transação encontrada para o usuário", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     @GetMapping("/transactions_by_user/{userEmail}")
     public ResponseEntity<Object> getTransactionsByUser(@PathVariable String userEmail) {
         List<Transactions> transactions = transactionsService.getTransactionsByUser(userEmail);
@@ -28,6 +38,11 @@ public class TransactionsController {
         }
     }
 
+    @Operation(summary = "Criar uma nova transação")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Transação criada", content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "400", description = "Dados da transação inválidos", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     @PostMapping("/create_transaction")
     public ResponseEntity<String> createTransaction(@RequestBody Transactions transaction) {
         if (transaction.getUserEmail() == null || transaction.getIataFlight() == null
@@ -38,6 +53,12 @@ public class TransactionsController {
         return new ResponseEntity<>("Transaction created", HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Atualizar uma transação existente")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transação atualizada", content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "400", description = "Dados da transação inválidos", content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "404", description = "Transação não encontrada", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     @PutMapping("/update_transaction/{id}")
     public ResponseEntity<String> updateTransaction(@PathVariable Long id, @RequestBody Transactions transaction) {
         if (transaction.getUserEmail() == null || transaction.getIataFlight() == null
@@ -52,6 +73,12 @@ public class TransactionsController {
         }
     }
 
+    @Operation(summary = "Obter informações de uma transação pelo ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transação encontrada", content = @Content(schema = @Schema(implementation = Transactions.class))),
+            @ApiResponse(responseCode = "400", description = "ID da transação inválido", content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "404", description = "Transação não encontrada", content = @Content(schema = @Schema(implementation = String.class)))
+    })
     @GetMapping("/{id}")
     public ResponseEntity<Object> getTransaction(@PathVariable String id) {
         Long longId;
